@@ -28,6 +28,7 @@ describe('pickOverridableSubset', () => {
       terminal: { shell: 'pwsh.exe', fontSize: 14, cursorStyle: 'block' },
       agent: { permissionMode: 'acceptEdits' },
       git: { worktreesEnabled: true, defaultBaseBranch: 'develop' },
+      boards: { autoImportIntervalMinutes: 30 },
       browser: { defaultUrl: 'http://troyweb.com/' },
       importSources: [
         { id: 'e83c7746', source: 'azure_devops', label: 'OCC / OCC-OKIES/2026-06' },
@@ -42,6 +43,9 @@ describe('pickOverridableSubset', () => {
     expect(result.theme).toBe('forest');
     expect(result.agent).toEqual({ permissionMode: 'acceptEdits' });
     expect(result.git).toEqual({ worktreesEnabled: true, defaultBaseBranch: 'develop' });
+    // The auto-import interval IS a project setting (unlike importSources); it
+    // survives while the sources array it acts on is dropped.
+    expect(result.boards).toEqual({ autoImportIntervalMinutes: 30 });
   });
 
   it('drops agent.execution and agent.executionServers - a new project must not inherit another project\'s remote server directory', () => {
@@ -121,6 +125,9 @@ describe('pickOverridableSubset', () => {
         linkNodeModules: false,
         prRefreshIntervalMinutes: 10,
       },
+      boards: {
+        autoImportIntervalMinutes: 60,
+      },
     } as unknown as Parameters<typeof pickOverridableSubset>[0];
 
     expect(pickOverridableSubset(fullConfig)).toEqual({
@@ -134,6 +141,9 @@ describe('pickOverridableSubset', () => {
         initScript: null,
         linkNodeModules: false,
         prRefreshIntervalMinutes: 10,
+      },
+      boards: {
+        autoImportIntervalMinutes: 60,
       },
     });
   });

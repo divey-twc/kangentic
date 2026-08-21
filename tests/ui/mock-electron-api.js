@@ -125,6 +125,9 @@
       linkNodeModules: true,
       prRefreshIntervalMinutes: 5,
     },
+    boards: {
+      autoImportIntervalMinutes: null,
+    },
     mcpServer: {
       enabled: true,
       bindAddress: '127.0.0.1',
@@ -291,6 +294,7 @@
     source = source || {};
     var agent = source.agent || {};
     var git = source.git || {};
+    var boards = source.boards || {};
     var result = {};
     if (source.theme !== undefined) result.theme = source.theme;
     // terminal.* (shell, fontSize, fontFamily, cursorStyle,
@@ -309,6 +313,12 @@
       prRefreshIntervalMinutes: git.prRefreshIntervalMinutes,
     });
     if (pickedGit) result.git = pickedGit;
+    // boards.autoImportIntervalMinutes is project-scoped; importSources is not a
+    // setting and is dropped (see the config-manager comment).
+    var pickedBoards = pruneUndefined({
+      autoImportIntervalMinutes: boards.autoImportIntervalMinutes,
+    });
+    if (pickedBoards) result.boards = pickedBoards;
     return result;
   }
 

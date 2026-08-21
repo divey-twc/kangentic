@@ -91,6 +91,17 @@ vi.mock('../../src/main/pr/pr-refresh-scheduler', () => ({
   },
 }));
 
+// Same treatment for the sibling lazy import CONFIG_SET_PROJECT_BY_PATH added for
+// auto-import: `void import('../../boards/auto-import-scheduler')`. Left unmocked,
+// the real module pulls in the whole boards adapter registry (gh/az-backed).
+const autoImportStartForProjectSpy = vi.fn();
+vi.mock('../../src/main/boards/auto-import-scheduler', () => ({
+  autoImportScheduler: {
+    startForProject: (...args: unknown[]) => autoImportStartForProjectSpy(...args),
+    stop: vi.fn(),
+  },
+}));
+
 // Same treatment for the sibling lazy import inside CONFIG_SET_PROJECT_BY_PATH:
 // system.ts re-runs the conversation-memory sweep via
 // `void import('../../retrieval/retrieval-service')`. Left unmocked, the real
@@ -445,6 +456,7 @@ describe('CONFIG_SET_PROJECT_BY_PATH IPC handler - prRefreshScheduler wiring', (
     capturedOnHandlers.clear();
     applyRuntimeConfigSpy.mockClear();
     startForProjectSpy.mockClear();
+    autoImportStartForProjectSpy.mockClear();
   });
 
   it('calls startForProject with (context, project) when path is the currently-open project', async () => {
@@ -464,6 +476,11 @@ describe('CONFIG_SET_PROJECT_BY_PATH IPC handler - prRefreshScheduler wiring', (
     // The project arg must be the entry from projectRepo.list() matching the path.
     const [_contextArg, projectArg] = startForProjectSpy.mock.calls[0] as [unknown, { path: string }];
     expect(projectArg.path).toBe(projectPath);
+
+    // The sibling auto-import scheduler is re-armed the same way.
+    await vi.waitFor(() => expect(autoImportStartForProjectSpy).toHaveBeenCalledTimes(1));
+    const [, autoImportProjectArg] = autoImportStartForProjectSpy.mock.calls[0] as [unknown, { path: string }];
+    expect(autoImportProjectArg.path).toBe(projectPath);
   });
 
   it('does NOT call startForProject for a background (non-current) project', async () => {
@@ -484,6 +501,7 @@ describe('CONFIG_SET_PROJECT_BY_PATH IPC handler - prRefreshScheduler wiring', (
     await Promise.resolve();
 
     expect(startForProjectSpy).not.toHaveBeenCalled();
+    expect(autoImportStartForProjectSpy).not.toHaveBeenCalled();
     // saveProjectOverrides is still called for background projects.
     expect(context.configManager.saveProjectOverrides).toHaveBeenCalledWith(
       backgroundPath,
@@ -499,6 +517,7 @@ describe('CONFIG_SET_PROJECT_BY_PATH IPC handler - prRefreshScheduler wiring', (
       invokeHandler('config:setProjectByPath', '/unknown/path', {}),
     ).toThrow('Unknown project path');
     expect(startForProjectSpy).not.toHaveBeenCalled();
+    expect(autoImportStartForProjectSpy).not.toHaveBeenCalled();
   });
 });
 

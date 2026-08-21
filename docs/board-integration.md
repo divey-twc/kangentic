@@ -118,6 +118,15 @@ The contract is locked in by `tests/unit/board-registry.test.ts`, which fails if
 
 The registry enumerates all 7 providers. Stable providers dispatch normally; stub providers (`jira`, `linear`, `trello`) are rendered as "coming soon" in the settings UI, and IPC handlers short-circuit them before any throwing method runs.
 
+## Importing Issues
+
+Imported issues land in the **backlog** (`backlog_tasks`, `sync_status='imported'`), never directly on the board. De-duplication is cross-table: `BacklogRepository.findByExternalIds` unions `backlog_tasks` and `tasks`, so an issue already imported (or already promoted to the board) is never imported twice. That idempotency is what lets the import run repeatedly and safely.
+
+There are two triggers, both driving the same fetch-and-create pipeline (the shared `importIssuesToBacklog` create loop in `src/main/boards/shared/import-runner.ts`):
+
+- **Manual.** The "Import Tasks" popover lets the user add saved sources and import on demand, via the `backlog:import*` IPC channels (`BACKLOG_IMPORT_FETCH` -> `BACKLOG_IMPORT_EXECUTE`).
+- **Auto-import (background).** When a project sets `boards.autoImportIntervalMinutes` (General tab; off by default), `autoImportScheduler` (`src/main/boards/auto-import-scheduler.ts`) runs a periodic sweep. Each sweep (`runAutoImportForProject` in `src/main/boards/auto-import.ts`) enumerates the project's saved `importSources`, pages `adapter.fetch(...)` for open issues, and runs the same create loop. It is opt-in and best-effort: a missing/unauthenticated CLI or a stub adapter is skipped silently, and one bad source never aborts the others. A sweep that imports something broadcasts `BACKLOG_CHANGED_BY_AGENT` so the backlog view refreshes (no toast/desktop notification). The scheduler mirrors `prRefreshScheduler`'s lifecycle (single active-project timer, `.unref()`'d, cleared on switch/delete/shutdown); unlike PR refresh it does zero work when off (no on-open sweep).
+
 ## See Also
 
 - [Agent Integration](agent-integration.md) - the analogous adapter system for AI coding agents.

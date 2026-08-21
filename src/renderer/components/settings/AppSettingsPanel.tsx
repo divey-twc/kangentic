@@ -108,7 +108,7 @@ export function SettingsContent({ activeTab, isSearching, searchQuery, matchingT
 
   const renderTab = (tabId: string) => {
     switch (tabId) {
-      case 'general': return <GeneralTab />;
+      case 'general': return <GeneralTab config={effectiveConfig} />;
       case 'theme': return <ThemeTab config={effectiveConfig} />;
       case 'terminal': return <TerminalTab config={effectiveConfig} globalConfig={globalConfig} shells={shells} fonts={fonts} />;
       case 'agent': return <AgentTab config={effectiveConfig} globalConfig={globalConfig} agentList={agentList} />;

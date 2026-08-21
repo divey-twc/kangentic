@@ -21,6 +21,7 @@ export interface SettingDefinition {
 export const SETTINGS_REGISTRY: SettingDefinition[] = [
   // ── General ──
   { id: 'project.location', tabId: 'general', label: 'Project Location', description: 'Folder on disk this project points at. Move it to a new location; all tasks, history, and worktrees move with it.', scope: 'project', keywords: ['path', 'folder', 'directory', 'move', 'relocate', 'change directory', 'locate'] },
+  { id: 'boards.autoImportIntervalMinutes', tabId: 'general', label: 'Auto-import Tasks', description: 'How often to pull new issues from this project\'s saved import sources into the backlog. Off by default.', scope: 'project', keywords: ['import', 'sync', 'github', 'jira', 'azure', 'asana', 'poll', 'backlog', 'issues'] },
 
   // ── Theme ──
   { id: 'theme', tabId: 'theme', label: 'Theme', description: 'Color scheme for the interface', scope: 'project', keywords: ['color', 'dark', 'light', 'appearance'] },

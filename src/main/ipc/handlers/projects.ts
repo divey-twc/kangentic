@@ -22,6 +22,7 @@ import { trackEvent } from '../../analytics/analytics';
 import { isShuttingDown } from '../../shutdown-state';
 import { runWithProjectLogContext } from '../../diagnostics/project-log-context';
 import { prRefreshScheduler } from '../../pr/pr-refresh-scheduler';
+import { autoImportScheduler } from '../../boards/auto-import-scheduler';
 import { retrievalService } from '../../retrieval/retrieval-service';
 import { DEFAULT_AGENT } from '../../../shared/types';
 import type { Project, Task, AppConfig, ProjectSearchEntriesInput, ProjectRelocateOptions, ProjectPathProbe, ProjectEnsureGitResult, ProjectOpenByPathOverrides } from '../../../shared/types';
@@ -102,6 +103,7 @@ export async function cleanupProject(context: IpcContext, projectId: string, pro
   // Stop this project's background PR-refresh timer (no-op if it is not the
   // active one). Before the path-exists guard so both cleanup paths tear it down.
   prRefreshScheduler.stop(projectId);
+  autoImportScheduler.stop(projectId);
   retrievalService.stop(projectId);
 
   // Guard: project path must exist
@@ -657,6 +659,11 @@ export function registerProjectHandlers(context: IpcContext): void {
     // merged off-app while away is reflected on return; the sweep is deferred off
     // the IPC critical path and the timer is torn down on switch/delete/shutdown.
     prRefreshScheduler.startForProject(context, project);
+
+    // Background auto-import: when the project has an auto-import interval set,
+    // periodically pull new issues from its saved import sources into the backlog.
+    // Opt-in: does nothing when the interval is Off.
+    autoImportScheduler.startForProject(context, project);
 
     // Background conversation-memory indexing: a deferred, switch-guarded
     // backfill sweep of unindexed sessions. Live sessions are indexed via the

@@ -24,6 +24,7 @@ import type {
   Task,
 } from '../../../shared/types';
 import { boardRegistry, ImportSourceStore } from '../../boards';
+import { importIssuesToBacklog } from '../../boards/shared/import-runner';
 import { registerAsanaIpcHandlers } from '../../boards/adapters/asana';
 
 /**
@@ -373,74 +374,10 @@ export function registerBacklogHandlers(context: IpcContext): void {
       throw new Error('No project is currently open');
     }
     const db = getProjectDb(context.currentProjectId);
-    const backlogRepo = new BacklogRepository(db);
     const adapter = boardRegistry.requireStable(input.source);
-
-    const externalIds = input.issues.map((issue) => issue.externalId);
-    const alreadyImportedIds = backlogRepo.findByExternalIds(input.source, externalIds);
-
-    const importedItems = [];
-    let skippedDuplicates = 0;
-    let totalSkippedAttachments = 0;
-
-    for (const issue of input.issues) {
-      if (alreadyImportedIds.has(issue.externalId)) {
-        skippedDuplicates++;
-        continue;
-      }
-
-      // Download inline images from the issue body (source-agnostic)
-      const { attachments: inlineAttachments, skippedCount: inlineSkipped } =
-        await adapter.downloadImages(issue.body);
-      totalSkippedAttachments += inlineSkipped;
-
-      // Download file attachments if the source supports them (e.g. Azure DevOps AttachedFile relations)
-      const downloadedAttachments = [...inlineAttachments];
-      if (adapter.downloadFileAttachments && issue.fileAttachments?.length) {
-        const { attachments: fileAttachments, skippedCount: fileSkipped } =
-          await adapter.downloadFileAttachments(issue.fileAttachments);
-        downloadedAttachments.push(...fileAttachments);
-        totalSkippedAttachments += fileSkipped;
-      }
-
-      const attachmentMetadata = downloadedAttachments.map((attachment) => ({
-        originalUrl: attachment.sourceUrl,
-        filename: attachment.filename,
-      }));
-
-      const item = backlogRepo.create({
-        title: issue.title,
-        description: issue.body,
-        priority: 0,
-        labels: issue.labels,
-        assignee: issue.assignee ?? undefined,
-        externalId: issue.externalId,
-        externalSource: input.source,
-        externalUrl: issue.externalUrl,
-        syncStatus: 'imported',
-        externalMetadata: attachmentMetadata.length > 0 ? { attachments: attachmentMetadata } : undefined,
-      });
-
-      // Save downloaded images as backlog attachments
-      if (downloadedAttachments.length > 0) {
-        const pendingAttachments = downloadedAttachments.map((attachment) => ({
-          filename: attachment.filename,
-          data: attachment.data,
-          media_type: attachment.mediaType,
-        }));
-        savePendingAttachments(db, context.currentProjectPath, item.id, pendingAttachments);
-      }
-
-      const refreshedItem = backlogRepo.getById(item.id) ?? item;
-      importedItems.push(refreshedItem);
-    }
-
-    return {
-      imported: importedItems.length,
-      skippedDuplicates,
-      skippedAttachments: totalSkippedAttachments,
-      items: importedItems,
-    };
+    // The per-issue create loop lives in the shared runner so the background
+    // auto-import sweep (src/main/boards/auto-import.ts) runs identical logic.
+    return importIssuesToBacklog(db, context.currentProjectPath, adapter, input.source, input.issues);
   });
 
   ipcMain.handle(IPC.BACKLOG_IMPORT_SOURCES_LIST, () => {

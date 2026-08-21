@@ -53,6 +53,7 @@ import { popOutWindowManager } from './pop-out/pop-out-window-manager';
 import { loadReactDevTools } from './devtools';
 import { syncShutdownCleanup, startHardShutdownFailsafe } from './shutdown';
 import { prRefreshScheduler } from './pr/pr-refresh-scheduler';
+import { autoImportScheduler } from './boards/auto-import-scheduler';
 import { retrievalService } from './retrieval/retrieval-service';
 import { lineCountClient } from './git/line-count/line-count-client';
 import { setProjectDbInitializer } from './db/database';
@@ -1374,6 +1375,8 @@ function getShutdownDependencies() {
       // Stop the background PR-refresh timer (also .unref()'d, but clear it
       // explicitly so no tick fires mid-shutdown).
       prRefreshScheduler.stop();
+      // Stop the background auto-import timer synchronously (same contract).
+      autoImportScheduler.stop();
       // Stop conversation-memory indexing synchronously: drop pending finalize
       // timers and abandon any in-flight sweep (recovered on next open).
       retrievalService.dispose();

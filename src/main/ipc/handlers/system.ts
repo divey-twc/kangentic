@@ -199,6 +199,13 @@ export function registerSystemHandlers(context: IpcContext): void {
       void import('../../pr/pr-refresh-scheduler').then(({ prRefreshScheduler }) => {
         prRefreshScheduler.startForProject(context, project);
       });
+      // Re-arm auto-import so a changed interval (General tab) takes effect
+      // immediately without reopening the project. Lazily imported for the same
+      // reason as the PR scheduler above (keep the boards/gh-backed runtime out of
+      // this module's eager graph).
+      void import('../../boards/auto-import-scheduler').then(({ autoImportScheduler }) => {
+        autoImportScheduler.startForProject(context, project);
+      });
       // Re-run the conversation-memory sweep so toggling memory.indexingEnabled
       // on takes effect without reopening the project.
       void import('../../retrieval/retrieval-service').then(({ retrievalService }) => {

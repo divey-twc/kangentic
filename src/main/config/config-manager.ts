@@ -91,6 +91,15 @@ export function pickOverridableSubset(source: DeepPartial<AppConfig>): Partial<A
   });
   if (git) result.git = git;
 
+  // boards.autoImportIntervalMinutes is project-scoped (the saved import sources
+  // it acts on are per-project). Only the interval is a "setting"; importSources
+  // itself is per-project data that must NOT seed a new project (see this test's
+  // header and the importSources drop above), so it is deliberately not picked.
+  const boards = pruneUndefined({
+    autoImportIntervalMinutes: source.boards?.autoImportIntervalMinutes,
+  });
+  if (boards) result.boards = boards;
+
   return result as Partial<AppConfig>;
 }
 

@@ -2501,6 +2501,18 @@ export interface AppConfig {
     labelColors: Record<string, string>;
   };
 
+  // Board-integration (external issue tracker) settings. Project-overridable
+  // because the saved import sources they act on are per-project.
+  boards: {
+    /**
+     * Minutes between background auto-import sweeps that pull new issues from
+     * the project's saved import sources into the backlog. null = off (opt-in):
+     * no timer and no on-open sweep, so an opt-out project does zero background
+     * work. Mirrors git.prRefreshIntervalMinutes.
+     */
+    autoImportIntervalMinutes: number | null;
+  };
+
   // Embedded browser pane defaults. Project-overridable so each
   // project remembers its own dev-server URL and so security-conscious
   // projects can disable the pane entirely.
@@ -2985,6 +2997,9 @@ export const DEFAULT_CONFIG: AppConfig = {
       { label: 'Urgent', color: '#ef4444' },
     ],
     labelColors: {},
+  },
+  boards: {
+    autoImportIntervalMinutes: null,
   },
   browser: {
     enabled: true,

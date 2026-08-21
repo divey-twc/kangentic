@@ -162,6 +162,10 @@ vi.mock('../../src/main/pr/pr-refresh-scheduler', () => ({
   prRefreshScheduler: { startForProject: vi.fn(), stop: vi.fn() },
 }));
 
+vi.mock('../../src/main/boards/auto-import-scheduler', () => ({
+  autoImportScheduler: { startForProject: vi.fn(), stop: vi.fn() },
+}));
+
 vi.mock('../../src/main/retrieval/retrieval-service', () => ({
   retrievalService: { startForProject: vi.fn(), stop: vi.fn(), reconcileEmbedWorker: vi.fn() },
 }));

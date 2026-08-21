@@ -1,16 +1,29 @@
 import { FolderInput } from 'lucide-react';
+import type { AppConfig } from '../../../../shared/types';
 import { useConfigStore } from '../../../stores/config-store';
 import { useProjectStore } from '../../../stores/project-store';
 import { useProjectRelocation } from '../../../hooks/useProjectRelocation';
-import { SettingRow, INPUT_CLASS } from '../shared';
+import { SettingRow, INPUT_CLASS, Select, useScopedUpdate } from '../shared';
 import { settingProps } from '../settings-registry';
+
+/** Preset cadences for the background auto-import sweep. "off" (the default)
+ *  disables it entirely - no timer and no on-open sweep. The cadences are longer
+ *  than the PR-refresh presets because importing shells out to gh/az and creates
+ *  rows, so it is heavier and less time-sensitive. */
+const AUTO_IMPORT_OPTIONS: { value: string; label: string }[] = [
+  { value: 'off', label: 'Off' },
+  { value: '15', label: 'Every 15 minutes' },
+  { value: '30', label: 'Every 30 minutes' },
+  { value: '60', label: 'Every hour' },
+];
 
 /**
  * General per-project settings. Project Location is unlike every other
  * per-project row, editing the project row in the global DB (via the
  * projects IPC surface) rather than the project's config overrides.
  */
-export function GeneralTab() {
+export function GeneralTab({ config }: { config: AppConfig }) {
+  const updateProject = useScopedUpdate('project');
   const projectSettingsPath = useConfigStore((state) => state.projectSettingsPath);
   const openProjectSettings = useConfigStore((state) => state.openProjectSettings);
   const currentProject = useProjectStore((state) => state.currentProject);
@@ -57,6 +70,19 @@ export function GeneralTab() {
           </div>
         </SettingRow>
       )}
+      <SettingRow {...settingProps('boards.autoImportIntervalMinutes')}>
+        <Select
+          value={config.boards.autoImportIntervalMinutes == null ? 'off' : String(config.boards.autoImportIntervalMinutes)}
+          onChange={(event) => {
+            const raw = event.target.value;
+            updateProject({ boards: { autoImportIntervalMinutes: raw === 'off' ? null : parseInt(raw, 10) } });
+          }}
+        >
+          {AUTO_IMPORT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </Select>
+      </SettingRow>
       {relocationDialog}
     </>
   );

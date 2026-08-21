@@ -56,10 +56,11 @@ These settings appear in both App Settings (as defaults) and Project Settings (a
 - `theme`
 - `agent.permissionMode`
 - `git.worktreesEnabled`, `git.autoCleanup`, `git.defaultBaseBranch`, `git.copyFiles`, `git.initScript`, `git.linkNodeModules`, `git.prRefreshIntervalMinutes`
+- `boards.autoImportIntervalMinutes`
 - `browser.enabled`, `browser.defaultUrl`
 - `agent.execution` (per-agent local/remote mode + server working directory; editable inline in the Agent tab for the currently-selected agent, but NOT seeded into new projects - see below)
 
-> **Seeded vs. stored.** All settings above are stored per-project in `.kangentic/config.json` and editable in Project Settings. When a *new* project is created it is seeded with only `theme`, `agent.permissionMode`, and `git.*` (via `pickOverridableSubset` in `config-manager.ts`). `browser.*`, `agent.execution`, and non-setting project data such as `importSources`, are kept per-project and never cloned, so one project's dev-server URL, remote-server directory, or import sources cannot leak into another. `terminal.*` used to be seeded here too; it moved to global-only, and `loadProjectOverrides()` (`config-manager.ts`) one-time-migrates any pre-existing per-project `terminal.{shell,fontFamily,fontSize,scrollbackLines,cursorStyle,backspaceSendsCtrlH}` out of `.kangentic/config.json` (dropped, not promoted to global) the first time that project loads.
+> **Seeded vs. stored.** All settings above are stored per-project in `.kangentic/config.json` and editable in Project Settings. When a *new* project is created it is seeded with only `theme`, `agent.permissionMode`, `git.*`, and `boards.autoImportIntervalMinutes` (via `pickOverridableSubset` in `config-manager.ts`). `browser.*`, `agent.execution`, and non-setting project data such as `importSources`, are kept per-project and never cloned, so one project's dev-server URL, remote-server directory, or import sources cannot leak into another. `terminal.*` used to be seeded here too; it moved to global-only, and `loadProjectOverrides()` (`config-manager.ts`) one-time-migrates any pre-existing per-project `terminal.{shell,fontFamily,fontSize,scrollbackLines,cursorStyle,backspaceSendsCtrlH}` out of `.kangentic/config.json` (dropped, not promoted to global) the first time that project loads.
 
 ## Full AppConfig Reference
 
@@ -311,6 +312,12 @@ All context bar settings are global-only and cannot be overridden per-project.
 |-----|------|---------|-------------|
 | `backlog.priorities` | Array<{ label: string; color: string }> | See below | Priority levels for backlog items. Default: None (#6b7280), Low (#3b82f6), Medium (#eab308), High (#f97316), Urgent (#ef4444). |
 | `backlog.labelColors` | Record<string, string> | `{}` | Mapping of label names to hex colors for backlog item labels. Empty by default; colors are assigned as labels are created. |
+
+### boards.*
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `boards.autoImportIntervalMinutes` | number \| null | `null` | Minutes between background auto-import sweeps that pull new issues from the project's saved import sources (`importSources`) into the backlog. `null` = off (opt-in): no timer and no on-open sweep. Project-overridable; edited in the General tab. |
 
 ### sidebar.*
 
